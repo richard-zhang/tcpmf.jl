@@ -77,16 +77,28 @@ begin
 	C(S, K, σ, r, T) = S * N(d_1(S, K, σ, r, T)) - K * exp(- r * T) * N(d_2(S, K, σ, r, T))
 end
 
+# ╔═╡ eee2098b-d585-47db-9c00-bb5b763bda2c
+md"""
+the of volatility against price for at-the-money strike is almost a straight line so the price of the at the money option represents the market view of volatility.
+
+In addition, this stright line also shows that when calculating vega using bump-and-price, a one-sided bump is used, this is because function of volatility to price this is a straight line hence using one bump is not only computation effeicent but also accruate enough.
+"""
+
 # ╔═╡ ae4189bc-51fd-442f-b657-1f6a8e168c6f
 let
 	S = 100
-	K = 100
     T = 1
 	r = 0.05
+	K = 100 * exp(r*T)
 	σ = 0:0.01:1
 	price = (σ -> C(S, K, σ, r, T)).(σ)
     plot(σ, price, label="at the money call option", xlabel="Volatility", ylabel="Price", xlimit=(0, 1), ylimit=(0,40))
 end
+
+# ╔═╡ 6609be82-a501-4f6b-ae6a-f7a76ad116d3
+md"""
+Alter the slider to see how the change
+"""
 
 # ╔═╡ 9043e323-bab8-4277-9856-5fd7128bb1ec
 @bind K PlutoUI.Slider(20:300)
@@ -95,24 +107,158 @@ end
 let
 	S = 100
     T = 1
-	r = 0.001
+	r = 0.00
 	σ = 0:0.01:1
 	price = (σ -> C(S, K, σ, r, T)).(σ)
     plot(σ, price, label="Option with spot=$S, stike=$K", xlabel="Volatility", ylabel="Price",xlimit=(0, 1), ylimit=(0,S))
 end
 
-# ╔═╡ ac84f8e7-6514-45e6-935b-7f730e724f12
-@bind a PlutoUI.Slider(1:10)
-
-# ╔═╡ a0cb471c-f77d-4e65-b836-c576c18e4116
-f(x, y) = sin(x * y)
-
-# ╔═╡ 0d8131e5-3188-4595-a033-4f2dcd3889f2
+# ╔═╡ 63ea5bd4-7dba-4b48-ba3c-e0a6b5de60be
 let
-    x = 0:0.01:2π
-    y = (x -> f(a, x)).(x)
-    plot(x, y, label="sin(ax)", xlabel="x", ylabel="sin(ax)", title="sin", legend=:topright)
+	S = 50:1.0:150
+	K = 100
+    T = 1
+	r = 0
+	σ = 0.4
+	price = (S -> C(S, K, σ, r, T)).(S)
+    plot(S, price, label="Option stike=$K", xlabel="spot", ylabel="Price",xlimit=(50, 150), ylimit=(0,100.0))
 end
+
+# ╔═╡ d9a5b26b-5edd-42d7-bc36-63060aa34a71
+
+
+# ╔═╡ c8baf3f4-ad7d-44ac-8cbc-5fe7f33dda0e
+md"""
+## Hedging
+- Delta Hedging
+- Gamma Hedging
+- Vega Hedging
+"""
+
+# ╔═╡ 1105a805-cb56-43bd-8012-86aeb73e50fa
+md"""
+## Delta
+
+The definition of delta is such:
+"""
+
+# ╔═╡ d7aa2670-20bc-4d9e-b8ce-309fb7ac182b
+@bind T PlutoUI.Slider(0:0.01:1)
+
+# ╔═╡ 4ad7d22d-dd06-46bd-a4ac-152a2a4ac911
+begin
+delta(S, K, σ, r, T) = N(d_1(S, K, σ, r, T))
+let 
+	S = 50:1.0:150
+	K = 100
+	r = 0
+	σ = 0.1
+	deltas = (S -> delta(S, K, σ, r, T)).(S)
+	plot(S, deltas, label="Delta", xlimit=(50, 150),ylimit=(0,1), title="varying Delta with respect to spot with expiry time")
+end
+end
+
+# ╔═╡ afb65203-4280-4d5d-8fb5-31e8d5c6c9f3
+md"""
+## Gamma
+
+The definition of gamma the derivative of delta with respect to spot price
+"""
+
+# ╔═╡ 580d4d11-c68f-4cb0-ac7b-f5154ebbc8a0
+begin
+N_dot(x) = (exp(-0.5x^2))/(sqrt(2π))
+gamma(S, K, σ, r, T) = N_dot(d_1(S, K, σ, r, T))/(S * σ * sqrt(T))
+let 
+	S = 50:1.0:150
+	K = 100
+	r = 0
+	σ = 0.1
+	gammas = (S -> gamma(S, K, σ, r, T)).(S)
+	plot(S, gammas, label="Delta", ylimit=(0, 0.1),xlimit=(50, 150), title="varying Gamma with respect to spot with expiry time")
+end
+end
+
+# ╔═╡ 4986f8e2-b8be-45dc-9c9a-091ebb192d63
+md"""
+## Vega
+
+You can the vega is strongly related to gamma. They shared the same term but with different coeffecient.
+"""
+
+# ╔═╡ dca3142f-64ef-4a74-aacf-d8e1c1449df9
+begin
+	vega(S, K, σ, r, T) = N_dot(d_1(S, K, σ, r, T)) * (S * sqrt(T))
+	let 
+	S = 50:1.0:150
+	K = 100
+	r = 0
+	σ = 0.5
+	vegas = (S -> vega(S, K, σ, r, T)).(S)
+	plot(S, vegas, label="vega",xlimit=(50, 150), title="varying Vega with respect to spot with expiry time")
+end
+end
+
+# ╔═╡ 1b4c404f-06fb-48d6-b5d1-1a1f5c21141d
+md"""
+### Delta Hedging
+
+- When we short a call option, we long delta stock.
+- The purpose of the delta-hedge was to eliminiate risk from the portfolio, by making the derviative of the portfolio with respect to the stock price zero.
+- A delta hedge strategy only reduces the effect relatively small underlying price changes on the options price.
+"""
+
+# ╔═╡ 7db6fccc-299e-477b-a5fe-8b62e577f9e7
+md"""
+### Gamma Hedging
+
+Strategy: complicated. often involving other options. We can calculate the gamma of other options availables to buy in the market. But the right amount such that the total gamma will be equal to 0. In addition, we will calculate the residual delta and also buy the right amount of stock to cancel out the residual delta. Notice the additional of stocks won't impact the gamma of the portfolio since derivative of a constant is zero. Hence we have a portfolio of zero gamma and zero delta.
+"""
+
+# ╔═╡ acba3bec-33ca-46e0-95ac-8355f5d062e2
+md"""
+### Takeaway 1: Proving the convexity of option price formula $C(K, T)$
+
+There're multiples ways to prove the convexity.
+
+#### Option 1. Brute Force.
+
+Function is convex iff its second order derivative is strictly positive. We can differentiate black-scholes formula directly.
+
+```math
+\Gamma = \frac{N'(d_1)}{S\sigma\sqrt{T-t}}
+```
+#### Option 2. Derived From Final payoff
+
+We rely on the no-arbitrage theorem of portfolio.
+
+> If portfolios $A$ and $B$ are such that in every possible state of the market at time $T$, portfolio $A$ is worth at least as much as portfolio B, then at any time $t < T$ portfolio $A$ is worth at least as much as portfolio $B$.
+
+combined with the final pay off of an option at expiry: a straight line with upward straight line.
+
+Analysis: take any $K_1$ and $K_2$ and propotion coeffecient $\theta$,
+
+construct a porfolio
+```math
+\theta C(K_1, T) + (1 - \theta)C(K_2, T) - C(\theta K_1 + (1 - \theta) K_2, T)
+```
+
+the value portfolio is non-negative at expiry $T$ due to final pay off is convex hence the value of portfolio at anytime $t < T$ is non-negative.
+
+"""
+
+# ╔═╡ 144a4197-575b-453b-aae6-a596e62534d4
+md"""
+### Takeaway 2: The relationship between Delta and Gamma
+
+This is classic naive taylor expansion.
+
+```math
+P(S + \Delta S, t) = P(S, t) + \frac{\partial{P}}{\partial{S}}(S, t)\Delta S + \frac{1}{2}\frac{\partial^2{P}}{\partial{S^2}}(S, t)\Delta S^2
+```
+
+When your porfolio is delta-hedged, i.e., $\frac{\partial{P}}{\partial{S}} = 0$, then the variation of your portfolio is govenred by second-order term. If your portfolio is convex, then this term is positive.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1339,11 +1485,24 @@ version = "1.4.1+1"
 # ╠═69d07063-e681-49d7-b92d-8d7d7849d545
 # ╠═03d2a55e-3e7a-4297-9818-6f5088531518
 # ╠═ab7c67a8-06ca-4685-bd50-1de70bc46670
+# ╠═eee2098b-d585-47db-9c00-bb5b763bda2c
 # ╠═ae4189bc-51fd-442f-b657-1f6a8e168c6f
+# ╠═6609be82-a501-4f6b-ae6a-f7a76ad116d3
 # ╠═9043e323-bab8-4277-9856-5fd7128bb1ec
 # ╠═8648492e-8917-4168-88f3-b8b92c7a675c
-# ╠═ac84f8e7-6514-45e6-935b-7f730e724f12
-# ╠═a0cb471c-f77d-4e65-b836-c576c18e4116
-# ╠═0d8131e5-3188-4595-a033-4f2dcd3889f2
+# ╠═63ea5bd4-7dba-4b48-ba3c-e0a6b5de60be
+# ╠═d9a5b26b-5edd-42d7-bc36-63060aa34a71
+# ╠═c8baf3f4-ad7d-44ac-8cbc-5fe7f33dda0e
+# ╠═1105a805-cb56-43bd-8012-86aeb73e50fa
+# ╠═d7aa2670-20bc-4d9e-b8ce-309fb7ac182b
+# ╠═4ad7d22d-dd06-46bd-a4ac-152a2a4ac911
+# ╠═afb65203-4280-4d5d-8fb5-31e8d5c6c9f3
+# ╠═580d4d11-c68f-4cb0-ac7b-f5154ebbc8a0
+# ╠═4986f8e2-b8be-45dc-9c9a-091ebb192d63
+# ╠═dca3142f-64ef-4a74-aacf-d8e1c1449df9
+# ╠═1b4c404f-06fb-48d6-b5d1-1a1f5c21141d
+# ╠═7db6fccc-299e-477b-a5fe-8b62e577f9e7
+# ╠═acba3bec-33ca-46e0-95ac-8355f5d062e2
+# ╠═144a4197-575b-453b-aae6-a596e62534d4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
