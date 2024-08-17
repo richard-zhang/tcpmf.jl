@@ -260,6 +260,114 @@ P(S + \Delta S, t) = P(S, t) + \frac{\partial{P}}{\partial{S}}(S, t)\Delta S + \
 When your porfolio is delta-hedged, i.e., $\frac{\partial{P}}{\partial{S}} = 0$, then the variation of your portfolio is govenred by second-order term. If your portfolio is convex, then this term is positive.
 """
 
+# ╔═╡ 3a4a718c-0c5e-416e-a769-baeeb397516b
+md"""
+### Figure Reproduction
+"""
+
+# ╔═╡ 592be007-e8d9-4b37-8d26-8651fb12c35b
+md"""
+Delta Hedged Portfolio
+"""
+
+# ╔═╡ 9b10ede8-8a4a-4e32-af02-45fce3b5acd4
+begin
+	let
+	strike = 100
+	spot = 100
+	σ = 0.1
+	r = 0
+	T = 2
+	function portfolio(current_spot)
+		option_price = C(spot, strike, σ, r, T)
+		option_price_new = C(current_spot, strike, σ, r, T)
+		hedge_amount = delta(spot, strike, σ, r, T)
+		return (option_price_new - option_price) - (current_spot - spot) * hedge_amount
+	end
+	spots = 60:0.5:140
+
+
+	function portfolio_plots(spots)
+		plot(spots, (portfolio).(spots), xlabel="spot",ylabel="change in delta-hedge-portfolio", label="Effect of Delta Hedging",xlimit=(min(spots...), max(spots...)), title="Delta-hedged portfolio")
+	end
+
+	plot(
+		portfolio_plots(60:0.5:140),
+		portfolio_plots(95:0.01:105),
+		portfolio_plots(99:0.001:101)
+	)
+	end
+end
+
+# ╔═╡ cb3a5116-7029-45c4-9ed9-7fec025a4f76
+md"""
+Notice the benefit of delta hedging. Since the gamma is always positive. The value of your hedge portfolio is always positive when stock moves.
+"""
+
+# ╔═╡ f9dda799-ca42-4101-b859-6858087b0e94
+md"""
+Gamma Hedged
+"""
+
+# ╔═╡ 66af027f-ae1b-4e70-935f-4040a7cf465e
+begin
+	let
+	strike = 110
+	spot = 100
+	σ = 0.1
+	r = 0
+	T = 2
+	hedging_option_strike = 100
+	function portfolio(current_spot)
+		hedge_option_price = C(spot, hedging_option_strike, σ, r, T)
+		hedge_option_gamma = gamma(spot, hedging_option_strike, σ, r, T)
+		hedge_option_delta = delta(spot, hedging_option_strike, σ, r, T)
+		
+		option_price = C(spot, strike, σ, r, T)
+		option_gamma = gamma(spot, strike, σ, r, T)
+		option_delta = delta(spot, strike, σ, r, T)
+		hedge_option_posision = -option_gamma/hedge_option_gamma
+		residual_delta = option_delta + hedge_option_posision * hedge_option_delta
+		stock_position = residual_delta * -1
+		
+		option_price_new = C(current_spot, strike, σ, r, T)
+		hedge_option_price_new = C(current_spot, hedging_option_strike, σ, r, T)
+		
+		return (option_price_new - option_price) + (current_spot - spot) * stock_position + (hedge_option_price_new - hedge_option_price) * hedge_option_posision
+	end
+	spots = 60:0.5:140
+
+
+	function portfolio_plots(spots)
+		plot(spots, (portfolio).(spots), xlabel="spot",ylabel="change in delta-hedge-portfolio", label="Effect of Gamma Hedging",xlimit=(min(spots...), max(spots...)), title="Gamma-hedged portfolio")
+	end
+
+	plot(
+		portfolio_plots(60:0.5:140),
+		portfolio_plots(95:0.01:105),
+		portfolio_plots(99:0.001:101)
+	)
+	end
+end
+
+# ╔═╡ 7b230da3-f277-42aa-90af-d53ca7492ad0
+md"""
+Strike against spot
+"""
+
+# ╔═╡ a8ceb01d-c17c-4948-92dc-743b0f3411c5
+begin
+	let
+		spot = 50
+		σ = 0.5
+		r = 0.02
+		T = 2
+		strikeToPrice = k -> C(spot, k, σ, r, T)
+		strikes = 10:0.1:110
+		plot(strikes, strikeToPrice, xlimit=(min(strikes...), max(strikes...)))
+	end
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -278,7 +386,7 @@ PlutoUI = "~0.7.59"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.2"
+julia_version = "1.10.4"
 manifest_format = "2.0"
 project_hash = "e028895a875b32b20980ab4e2fe741137168b00d"
 
@@ -374,7 +482,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.1.0+0"
+version = "1.1.1+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
@@ -1504,5 +1612,13 @@ version = "1.4.1+1"
 # ╠═7db6fccc-299e-477b-a5fe-8b62e577f9e7
 # ╠═acba3bec-33ca-46e0-95ac-8355f5d062e2
 # ╠═144a4197-575b-453b-aae6-a596e62534d4
+# ╠═3a4a718c-0c5e-416e-a769-baeeb397516b
+# ╠═592be007-e8d9-4b37-8d26-8651fb12c35b
+# ╠═9b10ede8-8a4a-4e32-af02-45fce3b5acd4
+# ╠═cb3a5116-7029-45c4-9ed9-7fec025a4f76
+# ╠═f9dda799-ca42-4101-b859-6858087b0e94
+# ╠═66af027f-ae1b-4e70-935f-4040a7cf465e
+# ╠═7b230da3-f277-42aa-90af-d53ca7492ad0
+# ╠═a8ceb01d-c17c-4948-92dc-743b0f3411c5
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
